@@ -6,7 +6,7 @@ pom.xml
 pom.xml.asc
 *.jar
 *.class
-/.lein-*
+/.cpcache
 /.nrepl-port
 /.prepl-port
 .hgignore

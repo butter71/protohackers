@@ -1,0 +1,13 @@
+{:paths ["src"]
+
+ :deps
+ {org.clojure/core.async {:mvn/version "1.6.673"}}
+
+ :aliases
+ {:run {:main-opts ["-m" "butter.echo-server.server"]}
+
+  :test {:extra-paths ["test"]
+         :extra-deps {io.github.cognitect-labs/test-runner
+                      {:git/tag "v0.5.1" :git/sha "dfb30dd"}}
+         :main-opts ["-m" "cognitect.test-runner"]
+         :exec-fn cognitect.test-runner.api/test}}}
