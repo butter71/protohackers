@@ -1,7 +1,7 @@
 (ns voracious-code-storage.core
   (:gen-class)
   (:import (java.net Socket ServerSocket)
-           (java.io BufferedInputStream BufferedOutputStream))
+           (java.io BufferedInputStream BufferedOutputStream File))
   (:require [voracious-code-storage.fs :refer [start-fs-server fs-list-dir fs-get-file fs-put-file]]
             [clojure.core.async :refer [thread chan <!! >!!]]
             [clojure.core.match :refer [match]]
@@ -227,6 +227,7 @@
       (recur (.accept server)))))
 
 (defn -main [& _args]
+  (.mkdir (File. "/tmp/vcs/"))
   (thread (inode-factory))
   (start-fs-server)
   (vcs-server))
