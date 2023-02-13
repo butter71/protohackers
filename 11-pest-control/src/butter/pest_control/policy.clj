@@ -19,49 +19,37 @@
         m2 (reduce (fn [acc [k v]] (assoc acc k v)) {} populations)]
     (merge-with max m1 m2)))
 
-(defn generate-policies [site populations]
+(defn policy-deltas [site-policies site populations]
   (loop [[[species n] & pops] (normalize-population-count site populations)
          acc []]
     (if (nil? species)
       acc
       (if-let [[pmin pmax] (get-in @site-targets [site species])]
-        (cond (< n pmin)
-              (recur pops (conj acc [species :conserve]))
+        (let [action (cond (< n pmin) :conserve
+                           (> n pmax) :cull
+                           :else :none)
+              [num prev-action] (get-in site-policies [site species])]
+          (cond (= prev-action action)
+                (recur pops acc)
 
-              (> n pmax)
-              (recur pops (conj acc [species :cull]))
+                (and (nil? num)
+                     (= action :none))
+                (recur pops acc)
 
-              :else
-              (recur pops (conj acc [species :none])))
+                (= action :none)
+                (recur pops (conj acc [:delete species num]))
+
+                (nil? num)
+                (recur pops (conj acc [:create species action]))
+
+                :else
+                (recur pops (conj acc [:delete species num] [:create species action]))))
         (recur pops acc)))))
-
-(defn policy-deltas [site-policies site new-policies]
-  (loop [[[species action] & ps] new-policies
-         acc []]
-    (if (nil? species)
-      acc
-      (let [[num prev-action] (get-in site-policies [site species])]
-        (cond (= prev-action action)
-              (recur ps acc)
-
-              (and (nil? num)
-                   (= action :none))
-              (recur ps acc)
-
-              (= action :none)
-              (recur ps (conj acc [:delete species num]))
-
-              (nil? num)
-              (recur ps (conj acc [:create species action]))
-
-              :else
-              (recur ps (conj acc [:delete species num] [:create species action])))))))
 
 (defn update-policies [site policies deltas]
   (loop [[d & ds] deltas
          acc policies]
-    (if (nil? d)
-      acc
+    (if (seq deltas)
       (match d
         [:delete s n]
         (do
@@ -70,14 +58,14 @@
 
         [:create s a]
         (let [n (create-policy site s a)]
-          (recur ds (assoc acc s [n a])))))))
+          (recur ds (assoc acc s [n a]))))
+      acc)))
 
 (defn policy-server [ch]
   (loop [site-policies {}]
     (let [{:keys [site populations]} (<!! ch)]
       (authority-client site)
       (recur (->> populations
-                  (generate-policies site)
                   (policy-deltas site-policies site)
                   (update-policies site (get site-policies site))
                   (assoc site-policies site))))))
