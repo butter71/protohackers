@@ -15,7 +15,7 @@
       (is (= [[:delete "aaa" 0]
               [:create "aaa" :conserve]
               [:delete "bbb" 2]
-	      [:create "ccc" :cull]
-	      [:create "ddd" :conserve]]
+              [:create "ccc" :cull]
+              [:create "ddd" :conserve]]
              (->> populations
                   (policy-deltas site-policies 12345)))))))
